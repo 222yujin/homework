@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>쇼핑몰</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css"
+          integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Jua', sans-serif;
+        }
+
+        #main {
+            margin: auto;
+            width: 800px;
+        }
+
+        #img {
+            background-image: url("http://itimg.chosun.com/sitedata/image/202004/09/2020040901242_0.jpg");
+            background-size: cover;
+            background-position: center;
+            width: 500px;
+            height: 300px;
+        }
+
+        .input-group {
+            width: 300px;
+        }
+
+        .order {
+            text-align: center;
+        }
+
+        h1, h5 {
+            display: inline;
+        }
+
+        #ex_rate {
+            color: blue;
+        }
+    </style>
+    <script>
+
+        $(document).ready(function () {
+            showOrders();
+            $.ajax({
+                type: "GET",
+                url: "https://api.manana.kr/exchange/rate.json",
+                data: {},
+                success: function (response) {
+                    let exchange = response[1]["rate"];
+
+                    let ex_rate = `달러-원 환율 : ${exchange}`;
+                    $('#ex_rate').append(ex_rate);
+                },
+            });
+        });
+
+        function order() {
+            const name = $('#order-name');
+            const count = $('#order-count');
+            const address = $('#order-address');
+            const phone = $('#order-phone');
+            const phone_check = /^01([0|1|6|7|8|9])-?([0-9]{3,4})-?([0-9]{4})$/;
+
+            const name_val = name.val();
+            const count_val = count.val();
+            const address_val = address.val();
+            const phone_val = phone.val();
+
+            if (name_val === '') {
+                alert("이름을 입력해주세요");
+                name.focus();
+                return;
+            } else if (count_val === '') {
+                alert("갯수를 입력해주세요");
+                count.focus();
+                return;
+            } else if (address_val === '') {
+                alert("주소를 입력해주세요");
+                address.focus();
+                return;
+            } else if (phone_val === '') {
+                alert("번호를 입력해주세요");
+                phone.focus();
+                return;
+            } else if (phone_check.test(phone_val) === false) {
+                alert("유효한 형식의 전화번호를 입력해주세요");
+                phone.val('');
+                phone.focus();
+                return;
+            }
+
+
+            // json으로 데이터 보내서 db에 반영하기
+            $.ajax({
+                type: "POST",
+                url: "/order",
+                data: {'name': name_val, 'address': address_val, 'phone': phone_val, 'count': count_val},
+                success: function (response) {
+                    if (response["result"] == "success") {
+                        alert("주문이 완료되었습니다!");
+                        location.reload();
+                    } else {
+                        alert("주문 오류입니다");
+                    }
+                }
+            })
+        }
+
+
+        function showOrders() {
+            $.ajax({
+                type: "GET",
+                url: "/order",
+                data: {},
+                success: function (response) {
+                    if (response["result"] == "success") {
+                        const dataList = response["orders"]
+                        for (let i = 0; i < dataList.length; i++) {
+                            const data = dataList[i];
+                            let html = `<tr>
+                                   <td>${data["name"]}</td>
+                                   <td>${data["count"]}</td>
+                                   <td>${data["address"]}</td>
+                                   <td>${data["phone"]}</td>
+                                    </tr>`
+
+                            $('#orders-box').append(html);
+
+                        }
+                    } else {
+                        alert("주문내역을 받아오지 못했습니다");
+                    }
+                }
+            })
+            // const formControls = $('#order .form-control');
+            // for (let i = 0; i < formControls.length; i++) {
+            //     const formControl = formControls[i];
+            //     // vanila js
+            //     formControl.value = '';
+            //
+            //     // jquery ( formControl는 DOM으로 $()로 감싸줘야 jquery 문법을 쓸 수 있어요)
+            //     // $(formControl).val('')
+            // }
+        }
+    </script>
+</head>
+<body>
+<div id="main">
+    <div id="img"></div>
+    <div id="info">
+        <h1>닌텐도 스위치 모여봐요 동물의 숲 에디션 </h1> <h5> 가격 : 318,100원</h5>
+        <p>「Nintendo Switch」에는 좌우가 한 세트인 컨트롤러 「Joy-Con (조이콘)」이 들어 있습니다. 「Joy-Con」은 세로 잡기, 가로 잡기 외에도양손에 하나씩 잡는 플레이 스타일,
+            2개 잡기로도 조작할 수 있습니다..닌텐도 e숍에서는 닌텐도 어카운트에 등록된 잔액으로 다운로드 소프트웨어 등을 구입할 수 있습니다.
+            닌텐도 e숍은 HOME 메뉴의 「닌텐도 e숍」에서 시작할 수 있습니다.</p>
+        <p id="ex_rate"></p>
+        <div id="order">
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">주문자 이름</span>
+                </div>
+                <input type="text" class="form-control" id="order-name">
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <label class="input-group-text">수량</label>
+                </div>
+                <select class="custom-select" id="order-count">
+                    <option selected value=""> -- 수량을 선택하세요 --</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                </select>
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">주소</span>
+                </div>
+                <input type="text" class="form-control" id="order-address">
+            </div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text">전화번호</span>
+                </div>
+                <input type="text" class="form-control" id="order-phone">
+            </div>
+            <div class="order">
+                <button onclick="order()" type="button" class="btn btn-primary">주문하기</button>
+            </div>
+        </div>
+        <div class="orders">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col">이름</th>
+                    <th scope="col">수량</th>
+                    <th scope="col">주소</th>
+                    <th scope="col">전화번호</th>
+                </tr>
+                </thead>
+                <tbody id="orders-box">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+</body>
+</html>
